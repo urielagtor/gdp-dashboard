@@ -23,7 +23,7 @@ import altair as alt
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
 
-st.set_page_config(page_title="Oregon Tech | Revenue Dashboard", layout="wide")
+st.set_page_config(page_title="OpenAI | Revenue Dashboard", layout="wide")
 
 # -----------------------------
 # Oregon Tech brand colors

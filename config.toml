@@ -1,6 +1,7 @@
 [theme]
-primaryColor = "#003767"              # Oregon Tech Blue
-backgroundColor = "#0E1117"           # Dark mode background
+base = "dark"
+primaryColor = "#003767"
+backgroundColor = "#0E1117"
 secondaryBackgroundColor = "#161B22"
 textColor = "#FAFAFA"
 font = "sans serif"
