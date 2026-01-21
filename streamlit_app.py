@@ -29,7 +29,7 @@ st.set_page_config(page_title="OpenAIgi | Revenue Dashboard", layout="wide")
 # Color Pallette
 # -----------------------------
 OT_BLUE = "#003767"
-OT_GOLD = "#FFD24F"git 
+OT_GOLD = "#FFD24F"
 OT_LAVENDER = "#7474C1"
 OT_SEA_GREEN = "#007B5F"
 OT_PEACOCK = "#00677F"
