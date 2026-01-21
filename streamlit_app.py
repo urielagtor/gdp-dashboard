@@ -29,7 +29,7 @@ st.set_page_config(page_title="OpenAIgi | Revenue Dashboard", layout="wide")
 # Color Pallette
 # -----------------------------
 OT_BLUE = "#003767"
-OT_GOLD = "#FFD24F"
+OT_GOLD = "#FFD24F"git 
 OT_LAVENDER = "#7474C1"
 OT_SEA_GREEN = "#007B5F"
 OT_PEACOCK = "#00677F"
@@ -280,7 +280,7 @@ def altair_bar_grouped(df_in: pd.DataFrame, x_col: str, cols: list[str], title: 
 # -----------------------------
 df = clean_data(raw_gdp_df)
 
-st.title("OpenAI Revenue & Customer Trends Dashboard")
+st.title("Julian Revenue & Customer Trends Dashboard")
 
 # Sidebar
 st.sidebar.title("Filters")
