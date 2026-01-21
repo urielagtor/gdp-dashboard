@@ -280,7 +280,7 @@ def altair_bar_grouped(df_in: pd.DataFrame, x_col: str, cols: list[str], title: 
 # -----------------------------
 df = clean_data(raw_gdp_df)
 
-st.title("Julian Revenue & Customer Trends Dashboard")
+st.title("OpenAI Revenue & Customer Trends Dashboard")
 
 # Sidebar
 st.sidebar.title("Filters")
