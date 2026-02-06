@@ -26,21 +26,45 @@ from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
 st.set_page_config(page_title="OpenAIgi | Revenue Dashboard", layout="wide")
 
 # -----------------------------
-# Color Pallette
+# Color Palette – modern & clean
 # -----------------------------
-OT_BLUE = "#003767"
-OT_GOLD = "#FFD24F"
-OT_LAVENDER = "#7474C1"
-OT_SEA_GREEN = "#007B5F"
-OT_PEACOCK = "#00677F"
-OT_BRASS = "#AC8400"
-OT_BURGUNDY = "#8F3237"
+CLR_PRIMARY = "#2563EB"
+CLR_TEAL = "#0D9488"
+CLR_VIOLET = "#7C3AED"
+CLR_ROSE = "#E11D48"
+CLR_AMBER = "#D97706"
+CLR_SKY = "#0EA5E9"
+CLR_EMERALD = "#059669"
 
-CHART_PALETTE = [OT_BLUE, OT_SEA_GREEN, OT_PEACOCK, OT_LAVENDER, OT_BRASS, OT_BURGUNDY, OT_GOLD]
+CHART_PALETTE = [CLR_PRIMARY, CLR_TEAL, CLR_VIOLET, CLR_AMBER, CLR_SKY, CLR_EMERALD, CLR_ROSE]
 
-# Apply Altair theme / palette
-alt.themes.enable("default")
-OT_SCALE = alt.Scale(range=CHART_PALETTE)
+# Apply clean Altair theme
+def _modern_theme():
+    return {
+        "config": {
+            "background": "#FFFFFF",
+            "title": {"color": "#334155", "fontSize": 14, "fontWeight": 600, "anchor": "start"},
+            "axis": {
+                "labelColor": "#64748B",
+                "titleColor": "#475569",
+                "gridColor": "#F1F5F9",
+                "domainColor": "#E2E8F0",
+                "tickColor": "#E2E8F0",
+                "labelFontSize": 11,
+                "titleFontSize": 12,
+            },
+            "legend": {
+                "labelColor": "#475569",
+                "titleColor": "#334155",
+                "labelFontSize": 11,
+            },
+            "view": {"strokeWidth": 0},
+        }
+    }
+
+alt.themes.register("modern_clean", _modern_theme)
+alt.themes.enable("modern_clean")
+PALETTE_SCALE = alt.Scale(range=CHART_PALETTE)
 
 # -----------------------------
 # Light CSS polish (optional)
@@ -48,33 +72,58 @@ OT_SCALE = alt.Scale(range=CHART_PALETTE)
 st.markdown(
     f"""
     <style>
-      /* Header accent */
-      h1, h2, h3 {{
-        color: {OT_BLUE};
+      /* Modern typography */
+      h1 {{
+        color: {CLR_PRIMARY};
+        font-weight: 700;
+        letter-spacing: -0.025em;
+      }}
+      h2, h3 {{
+        color: #334155;
+        font-weight: 600;
       }}
 
-      /* Sidebar headings */
-      section[data-testid="stSidebar"] h2, 
+      /* Sidebar */
+      section[data-testid="stSidebar"] {{
+        background-color: #F8FAFC;
+        border-right: 1px solid #E2E8F0;
+      }}
+      section[data-testid="stSidebar"] h2,
       section[data-testid="stSidebar"] h3 {{
-        color: {OT_BLUE};
+        color: #334155;
       }}
 
-      /* Metric label color */
+      /* KPI metric cards */
+      div[data-testid="stMetricValue"] {{
+        font-weight: 700;
+        font-size: 1.6rem;
+      }}
       div[data-testid="stMetricLabel"] {{
-        color: {OT_BLUE};
+        color: #64748B;
+        font-weight: 500;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
       }}
 
-      /* Small gold accent line under title */
-      .ot-accent {{
-        height: 6px;
-        width: 160px;
-        background: {OT_GOLD};
-        border-radius: 99px;
-        margin: 0.25rem 0 1rem 0;
+      /* Clean accent bar */
+      .modern-accent {{
+        height: 4px;
+        width: 48px;
+        background: linear-gradient(90deg, {CLR_PRIMARY}, {CLR_SKY});
+        border-radius: 2px;
+        margin: 0 0 1.5rem 0;
+      }}
+
+      /* Divider styling */
+      hr {{
+        border: none;
+        border-top: 1px solid #E2E8F0;
+        margin: 2rem 0;
       }}
     </style>
 
-    <div class="ot-accent"></div>
+    <div class="modern-accent"></div>
     """,
     unsafe_allow_html=True,
 )
@@ -231,7 +280,7 @@ def altair_multiline(df_in: pd.DataFrame, x_col: str, y_cols: list[str], title: 
         .encode(
             x=alt.X(f"{x_col}:T", title="Month"),
             y=alt.Y("Value:Q", title=y_title),
-            color=alt.Color("Series:N", scale=OT_SCALE, legend=alt.Legend(title="")),
+            color=alt.Color("Series:N", scale=PALETTE_SCALE, legend=alt.Legend(title="")),
             tooltip=[alt.Tooltip(f"{x_col}:T", title="Month"), "Series:N", alt.Tooltip("Value:Q", format=",.2f")],
         )
         .properties(title=title, height=320)
@@ -244,11 +293,11 @@ def altair_area_stacked(df_in: pd.DataFrame, x_col: str, cols: list[str], title:
     long = df_in[[x_col] + cols].melt(id_vars=[x_col], var_name="Series", value_name="Value")
     chart = (
         alt.Chart(long)
-        .mark_area(opacity=0.9)
+        .mark_area(opacity=0.7, line=True)
         .encode(
             x=alt.X(f"{x_col}:T", title="Month"),
             y=alt.Y("Value:Q", stack="zero", title=y_title),
-            color=alt.Color("Series:N", scale=OT_SCALE, legend=alt.Legend(title="")),
+            color=alt.Color("Series:N", scale=PALETTE_SCALE, legend=alt.Legend(title="")),
             tooltip=[alt.Tooltip(f"{x_col}:T", title="Month"), "Series:N", alt.Tooltip("Value:Q", format=",.0f")],
         )
         .properties(title=title, height=320)
@@ -261,12 +310,12 @@ def altair_bar_grouped(df_in: pd.DataFrame, x_col: str, cols: list[str], title: 
     long = df_in[[x_col] + cols].melt(id_vars=[x_col], var_name="Series", value_name="Value")
     chart = (
         alt.Chart(long)
-        .mark_bar()
+        .mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
         .encode(
             x=alt.X(f"{x_col}:T", title="Month"),
             xOffset=alt.XOffset("Series:N"),
             y=alt.Y("Value:Q", title=y_title),
-            color=alt.Color("Series:N", scale=OT_SCALE, legend=alt.Legend(title="")),
+            color=alt.Color("Series:N", scale=PALETTE_SCALE, legend=alt.Legend(title="")),
             tooltip=[alt.Tooltip(f"{x_col}:T", title="Month"), "Series:N", alt.Tooltip("Value:Q", format=",.0f")],
         )
         .properties(title=title, height=320)
