@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-import base64
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -27,7 +26,7 @@ from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
 st.set_page_config(page_title="CoreWeave | Revenue Dashboard", layout="wide")
 
 # -----------------------------
-# CoreWeave brand colors & chart palette
+# CoreWeave brand chart palette
 # -----------------------------
 CW_BLUE = "#2741E7"
 CW_CYAN = "#00D4FF"
@@ -41,69 +40,11 @@ CHART_PALETTE = [CW_BLUE, CW_CYAN, CW_VIOLET, CW_EMERALD, CW_AMBER, CW_SKY, CW_R
 PALETTE_SCALE = alt.Scale(range=CHART_PALETTE)
 
 # -----------------------------
-# Theme toggle — Light (default) / Dark
-# config.toml is light-base so light works natively.
-# Dark mode is applied via CSS overrides.
+# Minimal CSS polish
 # -----------------------------
-_is_dark = st.sidebar.toggle("Dark mode", value=False)
-
-# Altair themes — used with theme=None so Streamlit doesn't override
-@alt.theme.register("cw_light", enable=False)
-def _cw_lt():
-    return alt.theme.ThemeConfig({
-        "title": {"color": "#111827", "fontSize": 14, "fontWeight": 600, "anchor": "start"},
-        "axis": {
-            "labelColor": "#6B7280", "titleColor": "#374151",
-            "gridColor": "#E5E7EB", "domainColor": "#D1D5DB", "tickColor": "#D1D5DB",
-            "labelFontSize": 11, "titleFontSize": 12,
-        },
-        "legend": {"labelColor": "#374151", "titleColor": "#111827", "labelFontSize": 11},
-        "view": {"strokeWidth": 0},
-    })
-
-@alt.theme.register("cw_dark", enable=False)
-def _cw_dk():
-    return alt.theme.ThemeConfig({
-        "title": {"color": "#F9FAFC", "fontSize": 14, "fontWeight": 600, "anchor": "start"},
-        "axis": {
-            "labelColor": "#9CA3AF", "titleColor": "#D1D5DB",
-            "gridColor": "#1F2937", "domainColor": "#374151", "tickColor": "#374151",
-            "labelFontSize": 11, "titleFontSize": 12,
-        },
-        "legend": {"labelColor": "#D1D5DB", "titleColor": "#F9FAFC", "labelFontSize": 11},
-        "view": {"strokeWidth": 0},
-    })
-
-alt.theme.enable("cw_dark" if _is_dark else "cw_light")
-
-# -----------------------------
-# CSS — shared + dark-mode overrides
-# -----------------------------
-_dark_css = """
-      /* Dark mode overrides */
-      .stApp {
-        background-color: #000000;
-        color: #F9FAFC;
-      }
-      section[data-testid="stSidebar"] {
-        background-color: #0A0A10;
-        border-right: 1px solid #1F2937;
-      }
-      h1 { color: #F9FAFC; }
-      h2, h3 { color: #D1D5DB; }
-      div[data-testid="stMetricValue"] { color: #F9FAFC; }
-      div[data-testid="stMetricLabel"] { color: #9CA3AF; }
-      hr { border-top-color: #1F2937; }
-      .stMarkdown, .stText, p, label, span { color: #F9FAFC; }
-""" if _is_dark else ""
-
 st.markdown(
     f"""
     <style>
-      /* Hide Streamlit's built-in theme picker — we use our own toggle */
-      [data-testid="stMainMenu"] div[role="option"] {{
-        display: none;
-      }}
       h1 {{
         font-weight: 700;
         letter-spacing: -0.025em;
@@ -128,7 +69,6 @@ st.markdown(
         border-radius: 2px;
         margin: 0 0 1.5rem 0;
       }}
-      {_dark_css}
     </style>
     <div class="cw-accent"></div>
     """,
@@ -336,15 +276,10 @@ def altair_bar_grouped(df_in: pd.DataFrame, x_col: str, cols: list[str], title: 
 # -----------------------------
 df = clean_data(raw_gdp_df)
 
-# Sidebar logo (switches with theme)
-_logo_file = "CoreWeave Logo White.svg" if _is_dark else "CoreWeave Logo Black.svg"
-_logo_path = Path(__file__).parent / _logo_file
+# Sidebar logo
+_logo_path = Path(__file__).parent / "CoreWeave Logo White.svg"
 if _logo_path.exists():
-    _logo_b64 = base64.b64encode(_logo_path.read_bytes()).decode()
-    st.sidebar.markdown(
-        f'<img src="data:image/svg+xml;base64,{_logo_b64}" style="width:160px;margin-bottom:1.5rem;">',
-        unsafe_allow_html=True,
-    )
+    st.sidebar.image(str(_logo_path), width=160)
 
 st.title("CoreWeave Revenue & Customer Trends Dashboard")
 
@@ -425,16 +360,14 @@ st.altair_chart(
         "Subscription vs API Revenue",
         "Revenue (USD)"
     ),
-    use_container_width=True,
-    theme=None
+    use_container_width=True
 )
 
 st.subheader("Selected Metrics (Line Chart)")
 if selected_metrics:
     st.altair_chart(
         altair_multiline(fdf, "Month", selected_metrics, "Trends Over Time"),
-        use_container_width=True,
-        theme=None
+        use_container_width=True
     )
 else:
     st.info("Select at least one metric in the sidebar to display the line chart.")
@@ -447,8 +380,7 @@ st.altair_chart(
         "New vs Churned vs Net Customers",
         "Customers"
     ),
-    use_container_width=True,
-    theme=None
+    use_container_width=True
 )
 
 # Table
@@ -498,7 +430,6 @@ st.altair_chart(
         f"{target}: Actual / Fitted / Forecast",
         ""
     ),
-    use_container_width=True,
-    theme=None
+    use_container_width=True
 )
 
