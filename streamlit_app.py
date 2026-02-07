@@ -76,7 +76,6 @@ st.markdown(
         border-right: 1px solid rgba(255, 255, 255, 0.06);
       }}
       section[data-testid="stSidebar"] [data-testid="stSidebarHeader"] {{
-        border-bottom: 2px solid {CW_BLUE};
         padding-bottom: 0.75rem;
       }}
       section[data-testid="stSidebar"] h1 {{
