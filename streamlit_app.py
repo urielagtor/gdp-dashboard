@@ -406,14 +406,14 @@ st.altair_chart(
         "Subscription vs API Revenue",
         "Revenue (USD)"
     ),
-    width="stretch"
+    use_container_width=True
 )
 
 st.subheader("Selected Metrics (Line Chart)")
 if selected_metrics:
     st.altair_chart(
         altair_multiline(fdf, "Month", selected_metrics, "Trends Over Time"),
-        width="stretch"
+        use_container_width=True
     )
 else:
     st.info("Select at least one metric in the sidebar to display the line chart.")
@@ -426,7 +426,7 @@ st.altair_chart(
         "New vs Churned vs Net Customers",
         "Customers"
     ),
-    width="stretch"
+    use_container_width=True
 )
 
 # Table
@@ -476,6 +476,6 @@ st.altair_chart(
         f"{target}: Actual / Fitted / Forecast",
         ""
     ),
-    width="stretch"
+    use_container_width=True
 )
 
