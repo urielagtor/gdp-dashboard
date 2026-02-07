@@ -27,11 +27,13 @@ from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
 st.set_page_config(page_title="CoreWeave | Revenue Dashboard", layout="wide")
 
 # -----------------------------
-# Color Palette – CoreWeave branding
+# CoreWeave brand colors
 # -----------------------------
 CW_BLUE = "#2741E7"
 CW_BLACK = "#000000"
 CW_LIGHT = "#F9FAFC"
+
+# Chart accent colors (shared across both themes)
 CW_CYAN = "#00D4FF"
 CW_VIOLET = "#7B61FF"
 CW_EMERALD = "#34D399"
@@ -40,68 +42,134 @@ CW_ROSE = "#FB7185"
 CW_SKY = "#38BDF8"
 
 CHART_PALETTE = [CW_BLUE, CW_CYAN, CW_VIOLET, CW_EMERALD, CW_AMBER, CW_SKY, CW_ROSE]
+PALETTE_SCALE = alt.Scale(range=CHART_PALETTE)
 
-# Apply CoreWeave Altair theme (uses new alt.theme API)
-@alt.theme.register("coreweave_dark", enable=True)
-def _coreweave_theme():
+# -----------------------------
+# Theme toggle (sidebar)
+# -----------------------------
+if "cw_theme" not in st.session_state:
+    st.session_state.cw_theme = "dark"
+
+_theme_choice = st.sidebar.radio(
+    "Theme", ["Dark", "Light"], index=0 if st.session_state.cw_theme == "dark" else 1,
+    horizontal=True,
+)
+st.session_state.cw_theme = _theme_choice.lower()
+_is_dark = st.session_state.cw_theme == "dark"
+
+# -----------------------------
+# Register Altair themes
+# -----------------------------
+@alt.theme.register("coreweave_dark", enable=False)
+def _cw_dark_theme():
     return alt.theme.ThemeConfig(
         {
             "title": {"color": CW_LIGHT, "fontSize": 14, "fontWeight": 600, "anchor": "start"},
             "axis": {
-                "labelColor": "#9CA3AF",
-                "titleColor": "#D1D5DB",
-                "gridColor": "#1F2937",
-                "domainColor": "#374151",
-                "tickColor": "#374151",
-                "labelFontSize": 11,
-                "titleFontSize": 12,
+                "labelColor": "#9CA3AF", "titleColor": "#D1D5DB",
+                "gridColor": "#1F2937", "domainColor": "#374151", "tickColor": "#374151",
+                "labelFontSize": 11, "titleFontSize": 12,
             },
-            "legend": {
-                "labelColor": "#D1D5DB",
-                "titleColor": CW_LIGHT,
-                "labelFontSize": 11,
-            },
+            "legend": {"labelColor": "#D1D5DB", "titleColor": CW_LIGHT, "labelFontSize": 11},
             "view": {"strokeWidth": 0},
         }
     )
 
-PALETTE_SCALE = alt.Scale(range=CHART_PALETTE)
+@alt.theme.register("coreweave_light", enable=False)
+def _cw_light_theme():
+    return alt.theme.ThemeConfig(
+        {
+            "title": {"color": "#111827", "fontSize": 14, "fontWeight": 600, "anchor": "start"},
+            "axis": {
+                "labelColor": "#6B7280", "titleColor": "#374151",
+                "gridColor": "#E5E7EB", "domainColor": "#D1D5DB", "tickColor": "#D1D5DB",
+                "labelFontSize": 11, "titleFontSize": 12,
+            },
+            "legend": {"labelColor": "#374151", "titleColor": "#111827", "labelFontSize": 11},
+            "view": {"strokeWidth": 0},
+        }
+    )
+
+alt.theme.enable("coreweave_dark" if _is_dark else "coreweave_light")
 
 # -----------------------------
-# CoreWeave dark CSS
+# Theme-aware CSS
 # -----------------------------
+if _is_dark:
+    _bg = CW_BLACK
+    _bg2 = "#111118"
+    _sidebar_bg = "#0A0A10"
+    _sidebar_border = "#1F2937"
+    _h1_color = CW_LIGHT
+    _h23_color = "#D1D5DB"
+    _metric_val = CW_LIGHT
+    _metric_lbl = "#9CA3AF"
+    _divider = "#1F2937"
+    _text = CW_LIGHT
+    _input_bg = "#111118"
+else:
+    _bg = "#FFFFFF"
+    _bg2 = "#F1F5F9"
+    _sidebar_bg = CW_LIGHT
+    _sidebar_border = "#E2E8F0"
+    _h1_color = CW_BLUE
+    _h23_color = "#1E293B"
+    _metric_val = "#111827"
+    _metric_lbl = "#6B7280"
+    _divider = "#E2E8F0"
+    _text = "#1E293B"
+    _input_bg = "#FFFFFF"
+
 st.markdown(
     f"""
     <style>
+      /* Hide Streamlit's built-in theme menu items */
+      [data-testid="stMainMenu"] ul li:has(span:contains("Settings")) {{
+        display: none;
+      }}
+
+      /* Page background override */
+      .stApp {{
+        background-color: {_bg};
+      }}
+
       /* Typography */
       h1 {{
-        color: {CW_LIGHT};
+        color: {_h1_color};
         font-weight: 700;
         letter-spacing: -0.025em;
       }}
       h2, h3 {{
-        color: #D1D5DB;
+        color: {_h23_color};
         font-weight: 600;
+      }}
+      .stMarkdown, .stText, p, span, label {{
+        color: {_text};
       }}
 
       /* Sidebar */
       section[data-testid="stSidebar"] {{
-        background-color: #0A0A10;
-        border-right: 1px solid #1F2937;
+        background-color: {_sidebar_bg};
+        border-right: 1px solid {_sidebar_border};
       }}
       section[data-testid="stSidebar"] h2,
       section[data-testid="stSidebar"] h3 {{
-        color: {CW_LIGHT};
+        color: {_h23_color};
+      }}
+      section[data-testid="stSidebar"] .stMarkdown,
+      section[data-testid="stSidebar"] label,
+      section[data-testid="stSidebar"] span {{
+        color: {_text};
       }}
 
-      /* KPI metric cards */
+      /* Metric cards */
       div[data-testid="stMetricValue"] {{
         font-weight: 700;
         font-size: 1.6rem;
-        color: {CW_LIGHT};
+        color: {_metric_val};
       }}
       div[data-testid="stMetricLabel"] {{
-        color: #9CA3AF;
+        color: {_metric_lbl};
         font-weight: 500;
         text-transform: uppercase;
         font-size: 0.75rem;
@@ -117,11 +185,19 @@ st.markdown(
         margin: 0 0 1.5rem 0;
       }}
 
-      /* Divider styling */
+      /* Dividers */
       hr {{
         border: none;
-        border-top: 1px solid #1F2937;
+        border-top: 1px solid {_divider};
         margin: 2rem 0;
+      }}
+
+      /* Secondary backgrounds (cards, expanders, inputs) */
+      .stSelectbox > div,
+      .stMultiSelect > div,
+      div[data-baseweb="select"] > div,
+      .stDataFrame {{
+        background-color: {_bg2};
       }}
     </style>
 
@@ -331,8 +407,9 @@ def altair_bar_grouped(df_in: pd.DataFrame, x_col: str, cols: list[str], title: 
 # -----------------------------
 df = clean_data(raw_gdp_df)
 
-# Sidebar logo
-_logo_path = Path(__file__).parent / "CoreWeave Logo White.svg"
+# Sidebar logo (switches with theme)
+_logo_file = "CoreWeave Logo White.svg" if _is_dark else "CoreWeave Logo Black.svg"
+_logo_path = Path(__file__).parent / _logo_file
 if _logo_path.exists():
     _logo_b64 = base64.b64encode(_logo_path.read_bytes()).decode()
     st.sidebar.markdown(
