@@ -100,6 +100,10 @@ _dark_css = """
 st.markdown(
     f"""
     <style>
+      /* Hide Streamlit's built-in theme picker — we use our own toggle */
+      [data-testid="stMainMenu"] div[role="option"] {{
+        display: none;
+      }}
       h1 {{
         font-weight: 700;
         letter-spacing: -0.025em;
