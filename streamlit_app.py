@@ -573,14 +573,22 @@ if _fbx_files:
 
           var loader = new THREE.FBXLoader();
           loader.load(blobUrl, function(object) {
-            // Keep original FBX textures; just fix rendering quirks
+            // Keep original FBX textures; enable vertex colors if present
             object.traverse(function(child) {
               if (child instanceof THREE.Mesh) {
                 if (child.geometry) child.geometry.computeVertexNormals();
+                var hasVertexColors = child.geometry &&
+                  (child.geometry.getAttribute('color') ||
+                   (child.geometry.attributes && child.geometry.attributes.color));
                 var mats = Array.isArray(child.material) ? child.material : [child.material];
                 mats.forEach(function(m) {
                   m.side = THREE.DoubleSide;
+                  if (hasVertexColors) {
+                    m.vertexColors = THREE.VertexColors;
+                    m.color = new THREE.Color(0xffffff);
+                  }
                   if (m.map) m.map.encoding = THREE.sRGBEncoding;
+                  m.needsUpdate = true;
                 });
               }
             });
