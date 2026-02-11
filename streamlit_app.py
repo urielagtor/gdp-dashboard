@@ -471,123 +471,141 @@ if _fbx_files:
     selected_model = st.selectbox("Select Data Center", options=list(_fbx_files.keys()))
     fbx_b64 = base64.b64encode(_fbx_files[selected_model].read_bytes()).decode()
 
-    threejs_html = f"""
+    threejs_html = """
     <!DOCTYPE html>
     <html>
     <head>
     <style>
-      body {{ margin: 0; overflow: hidden; background: #000; }}
-      canvas {{ display: block; }}
-      #controls-hint {{
-        position: absolute; bottom: 12px; left: 50%;
-        transform: translateX(-50%);
+      body { margin: 0; overflow: hidden; background: #000; }
+      canvas { display: block; width: 100%%; height: 100%%; }
+      #loading {
+        position: absolute; top: 50%%; left: 50%%;
+        transform: translate(-50%%, -50%%);
+        color: rgba(249,250,252,0.6); font-family: sans-serif;
+        font-size: 14px;
+      }
+      #controls-hint {
+        position: absolute; bottom: 12px; left: 50%%;
+        transform: translateX(-50%%);
         color: rgba(249,250,252,0.45); font-family: sans-serif;
         font-size: 12px; pointer-events: none; user-select: none;
-      }}
+      }
+      #error-msg {
+        position: absolute; top: 50%%; left: 50%%;
+        transform: translate(-50%%, -50%%);
+        color: #FB7185; font-family: sans-serif;
+        font-size: 14px; display: none; text-align: center;
+      }
     </style>
     </head>
     <body>
+    <div id="loading">Loading 3D model...</div>
+    <div id="error-msg"></div>
     <div id="controls-hint">Drag to rotate &middot; Scroll to zoom &middot; Right-drag to pan</div>
-    <script type="importmap">
-    {{
-      "imports": {{
-        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
-      }}
-    }}
-    </script>
-    <script type="module">
-      import * as THREE from 'three';
-      import {{ OrbitControls }} from 'three/addons/controls/OrbitControls.js';
-      import {{ FBXLoader }} from 'three/addons/loaders/FBXLoader.js';
+    <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.0/umd/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/loaders/FBXLoader.js"></script>
+    <script>
+      try {
+        var w = document.body.clientWidth;
+        var h = document.body.clientHeight;
 
-      const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x000000);
+        var scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
 
-      const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 10000);
-      camera.position.set(0, 150, 300);
+        var camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 10000);
+        camera.position.set(0, 150, 300);
 
-      const renderer = new THREE.WebGLRenderer({{ antialias: true }});
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(window.devicePixelRatio);
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.2;
-      document.body.appendChild(renderer.domElement);
+        var renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(w, h);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        document.body.appendChild(renderer.domElement);
 
-      // Lighting
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-      scene.add(ambientLight);
+        // Lighting
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 
-      const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-      dirLight.position.set(200, 400, 200);
-      scene.add(dirLight);
+        var dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(200, 400, 200);
+        scene.add(dirLight);
 
-      const fillLight = new THREE.DirectionalLight(0x2741E7, 0.3);
-      fillLight.position.set(-200, 100, -200);
-      scene.add(fillLight);
+        var fillLight = new THREE.DirectionalLight(0x2741E7, 0.3);
+        fillLight.position.set(-200, 100, -200);
+        scene.add(fillLight);
 
-      // Grid
-      const grid = new THREE.GridHelper(600, 40, 0x2741E7, 0x111118);
-      scene.add(grid);
+        // Grid
+        scene.add(new THREE.GridHelper(600, 40, 0x2741E7, 0x111118));
 
-      // Controls
-      const controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.08;
-      controls.minDistance = 50;
-      controls.maxDistance = 2000;
-      controls.target.set(0, 50, 0);
-      controls.update();
-
-      // Load FBX
-      const fbxB64 = "{fbx_b64}";
-      const raw = atob(fbxB64);
-      const bytes = new Uint8Array(raw.length);
-      for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-      const blob = new Blob([bytes.buffer]);
-      const url = URL.createObjectURL(blob);
-
-      const loader = new FBXLoader();
-      loader.load(url, (object) => {{
-        // Center the model
-        const box = new THREE.Box3().setFromObject(object);
-        const center = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3());
-        object.position.sub(center);
-        object.position.y += size.y / 2;
-
-        scene.add(object);
-
-        // Fit camera
-        const maxDim = Math.max(size.x, size.y, size.z);
-        camera.position.set(maxDim * 0.8, maxDim * 0.6, maxDim * 0.8);
-        controls.target.set(0, size.y / 2, 0);
+        // Controls
+        var controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.minDistance = 50;
+        controls.maxDistance = 2000;
+        controls.target.set(0, 50, 0);
         controls.update();
 
-        URL.revokeObjectURL(url);
-      }});
+        // Load FBX from base64
+        var fbxB64 = "%%FBX_B64%%";
+        var raw = atob(fbxB64);
+        var bytes = new Uint8Array(raw.length);
+        for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+        var blob = new Blob([bytes.buffer]);
+        var url = URL.createObjectURL(blob);
 
-      // Resize
-      window.addEventListener('resize', () => {{
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      }});
+        var loader = new THREE.FBXLoader();
+        loader.load(url, function(object) {
+          var box = new THREE.Box3().setFromObject(object);
+          var center = box.getCenter(new THREE.Vector3());
+          var size = box.getSize(new THREE.Vector3());
+          object.position.sub(center);
+          object.position.y += size.y / 2;
 
-      // Animate
-      function animate() {{
-        requestAnimationFrame(animate);
-        controls.update();
-        renderer.render(scene, camera);
-      }}
-      animate();
+          scene.add(object);
+
+          var maxDim = Math.max(size.x, size.y, size.z);
+          camera.position.set(maxDim * 0.8, maxDim * 0.6, maxDim * 0.8);
+          controls.target.set(0, size.y / 2, 0);
+          controls.update();
+
+          document.getElementById('loading').style.display = 'none';
+          URL.revokeObjectURL(url);
+        }, undefined, function(err) {
+          document.getElementById('loading').style.display = 'none';
+          var el = document.getElementById('error-msg');
+          el.style.display = 'block';
+          el.textContent = 'Failed to load model: ' + err.message;
+        });
+
+        window.addEventListener('resize', function() {
+          var w2 = document.body.clientWidth;
+          var h2 = document.body.clientHeight;
+          camera.aspect = w2 / h2;
+          camera.updateProjectionMatrix();
+          renderer.setSize(w2, h2);
+        });
+
+        function animate() {
+          requestAnimationFrame(animate);
+          controls.update();
+          renderer.render(scene, camera);
+        }
+        animate();
+      } catch(e) {
+        document.getElementById('loading').style.display = 'none';
+        var el = document.getElementById('error-msg');
+        el.style.display = 'block';
+        el.textContent = 'Error: ' + e.message;
+      }
     </script>
     </body>
     </html>
     """
 
     import streamlit.components.v1 as components
-    components.html(threejs_html, height=600)
+    components.html(threejs_html.replace("%%FBX_B64%%", fbx_b64), height=600)
 else:
     st.info("No FBX models found in the models/ directory.")
 
