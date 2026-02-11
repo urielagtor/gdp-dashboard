@@ -543,15 +543,20 @@ if _fbx_files:
           renderer.toneMappingExposure = 1.2;
           document.body.appendChild(renderer.domElement);
 
-          // Lighting
-          scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+          // Lighting — strong even illumination
+          scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+          scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.8));
 
-          var dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+          var dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
           dirLight.position.set(200, 400, 200);
           scene.add(dirLight);
 
-          var fillLight = new THREE.DirectionalLight(0x2741E7, 0.3);
-          fillLight.position.set(-200, 100, -200);
+          var dirLight2 = new THREE.DirectionalLight(0xffffff, 0.6);
+          dirLight2.position.set(-200, 300, -100);
+          scene.add(dirLight2);
+
+          var fillLight = new THREE.DirectionalLight(0x2741E7, 0.4);
+          fillLight.position.set(0, -100, 200);
           scene.add(fillLight);
 
           // Grid
@@ -576,6 +581,30 @@ if _fbx_files:
 
           var loader = new THREE.FBXLoader();
           loader.load(blobUrl, function(object) {
+            // Fix materials: ensure they respond to light
+            object.traverse(function(child) {
+              if (child.isMesh) {
+                var mat = child.material;
+                if (Array.isArray(mat)) {
+                  child.material = mat.map(function(m) {
+                    var c = (m.color && m.color.r + m.color.g + m.color.b > 0.1) ? m.color : new THREE.Color(0x8899aa);
+                    return new THREE.MeshPhongMaterial({
+                      color: c,
+                      shininess: 30,
+                      side: THREE.DoubleSide
+                    });
+                  });
+                } else {
+                  var c = (mat.color && mat.color.r + mat.color.g + mat.color.b > 0.1) ? mat.color : new THREE.Color(0x8899aa);
+                  child.material = new THREE.MeshPhongMaterial({
+                    color: c,
+                    shininess: 30,
+                    side: THREE.DoubleSide
+                  });
+                }
+              }
+            });
+
             // Normalize model to ~200 units regardless of original scale
             var box = new THREE.Box3().setFromObject(object);
             var size = box.getSize(new THREE.Vector3());
