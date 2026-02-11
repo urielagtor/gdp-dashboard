@@ -573,23 +573,29 @@ if _fbx_files:
 
           var loader = new THREE.FBXLoader();
           loader.load(blobUrl, function(object) {
-            // Keep original FBX textures; enable vertex colors if present
+            // Replace all materials with MeshBasicMaterial (no lighting needed)
+            // Preserve textures, vertex colors, or use fallback grey
             object.traverse(function(child) {
               if (child instanceof THREE.Mesh) {
                 if (child.geometry) child.geometry.computeVertexNormals();
-                var hasVertexColors = child.geometry &&
-                  (child.geometry.getAttribute('color') ||
-                   (child.geometry.attributes && child.geometry.attributes.color));
+                var geo = child.geometry;
+                var hasVC = geo && geo.attributes && geo.attributes.color;
                 var mats = Array.isArray(child.material) ? child.material : [child.material];
-                mats.forEach(function(m) {
-                  m.side = THREE.DoubleSide;
-                  if (hasVertexColors) {
-                    m.vertexColors = THREE.VertexColors;
-                    m.color = new THREE.Color(0xffffff);
+                var newMats = mats.map(function(m) {
+                  var opts = { side: THREE.DoubleSide };
+                  if (m.map) {
+                    opts.map = m.map;
+                    opts.color = new THREE.Color(0xffffff);
+                  } else if (hasVC) {
+                    opts.vertexColors = THREE.VertexColors;
+                    opts.color = new THREE.Color(0xffffff);
+                  } else {
+                    opts.color = (m.color && (m.color.r + m.color.g + m.color.b) > 0.05)
+                      ? m.color : new THREE.Color(0xaaaaaa);
                   }
-                  if (m.map) m.map.encoding = THREE.sRGBEncoding;
-                  m.needsUpdate = true;
+                  return new THREE.MeshBasicMaterial(opts);
                 });
+                child.material = newMats.length === 1 ? newMats[0] : newMats;
               }
             });
 
